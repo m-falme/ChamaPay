@@ -1,0 +1,34 @@
+{% extends "base.html" %}{% block title %} · {{ chama.name }}{% endblock %}{% block body %}
+<h1 style="font-size:20px;margin:0 0 4px">{{ chama.name }}</h1>
+<p style="color:var(--m);margin:0 0 14px">{{ fmt(chama.contribution_amount) }} due on day {{ chama.contribution_day }} of each month · Current period {{ period }}</p>
+<div class="cards">
+ <div class="card"><small>Members</small><div>{{ chama.members|length }}</div></div>
+ <div class="card"><small>Total saved</small><div>{{ fmt(saved) }}</div></div>
+ <div class="card"><small>Out on loan</small><div>{{ fmt(lent) }}</div></div>
+ <div class="card"><small>Pool available</small><div>{{ fmt(saved - lent) }}</div></div>
+ <div class="card"><small>Late for {{ period }}</small><div style="color:var(--r)">{{ late|length }}</div></div>
+</div>
+<div class="actions">
+ <form method="post" action="{{ url_for('dashboard.remind') }}"><button>Send SMS reminders ({{ late|length }})</button></form>
+ {% if voice %}<form method="post" action="{{ url_for('dashboard.voice_remind') }}"><button>Call late members</button></form>{% endif %}
+</div>
+<div class="grid2">
+<section><h2>Members</h2><table><tr><th>Name</th><th>Phone</th><th>Savings</th><th>{{ period }}</th></tr>
+{% for m in chama.members %}<tr><td>{{ m.name }}{% if m.is_treasurer %} <span class="pill ok">treasurer</span>{% endif %}</td><td>{{ m.phone }}</td><td>{{ fmt(m.balance()) }}</td>
+<td>{% if m.paid_for(period) %}<span class="pill ok">paid</span>{% elif m.recorded_for(period) %}<span class="pill wait">pending</span>{% else %}<span class="pill bad">late</span>{% endif %}</td></tr>{% endfor %}
+</table></section>
+<section><h2>Late this month</h2>{% if late %}<table><tr><th>Name</th><th>Phone</th></tr>{% for m in late %}<tr><td>{{ m.name }}</td><td>{{ m.phone }}</td></tr>{% endfor %}</table>{% else %}<p>Everyone has paid.</p>{% endif %}</section>
+</div>
+<section><h2>Loans &amp; votes</h2><table><tr><th>Ref</th><th>Member</th><th>Amount</th><th>Reason</th><th>Status</th><th>Votes</th></tr>
+{% for l in loans %}{% set t = l.tally() %}<tr><td>L{{ l.id }}</td><td>{{ l.member.name }}</td><td>{{ fmt(l.amount) }}</td><td>{{ l.reason }}</td>
+<td><span class="pill {{ 'ok' if l.status=='approved' else 'bad' if l.status=='rejected' else 'wait' }}">{{ l.status }}</span></td>
+<td class="wrap">{{ t[0] }} yes / {{ t[1] }} no{% if l.votes %} · {% for v in l.votes %}{{ v.member.name.split()[0] }} {{ '✓' if v.approve else '✗' }}{% if not loop.last %}, {% endif %}{% endfor %}{% endif %}</td></tr>
+{% else %}<tr><td colspan="6">No loans yet.</td></tr>{% endfor %}</table></section>
+<section><h2>Contributions</h2><table><tr><th>Ref</th><th>Member</th><th>Period</th><th>Amount</th><th>Status</th><th></th></tr>
+{% for c in contributions %}<tr><td>C{{ c.id }}</td><td>{{ c.member.name }}</td><td>{{ c.period }}</td><td>{{ fmt(c.amount) }}</td>
+<td><span class="pill {{ 'ok' if c.status=='confirmed' else 'wait' }}">{{ c.status }}</span></td>
+<td>{% if c.status=='pending' %}<form method="post" action="{{ url_for('dashboard.confirm', cid=c.id) }}"><button class="sm">Confirm</button></form>{% endif %}</td></tr>{% endfor %}</table></section>
+<section><h2>SMS log</h2><table><tr><th>Time (UTC)</th><th>To</th><th>Type</th><th>Status</th><th>Delivery</th><th>Message</th></tr>
+{% for x in sms %}<tr><td>{{ x.created_at.strftime('%d %b %H:%M') }}</td><td>{{ x.to }}</td><td>{{ x.kind }}</td><td>{{ x.status }}</td><td>{{ x.delivery_status or '' }}</td><td class="wrap">{{ x.message }}</td></tr>
+{% else %}<tr><td colspan="6">No SMS yet.</td></tr>{% endfor %}</table></section>
+{% endblock %}
