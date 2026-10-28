@@ -1,6 +1,6 @@
 import click
 
-from .models import Chama
+from .models import Chama, Member, db
 
 
 def register(app):
@@ -26,3 +26,17 @@ def register(app):
         for chama in Chama.query.all():
             for phone, st in voice_reminders(chama).items():
                 click.echo(f"{phone}: {st}")
+
+    @app.cli.command("add-member")
+    @click.argument("name")
+    @click.argument("phone")
+    @click.option("--treasurer", is_flag=True)
+    def add_member_cmd(name, phone, treasurer):
+        """Add a member (e.g. your own sandbox simulator number) to the first chama."""
+        from .ussd import normalize_phone
+        chama = Chama.query.first()
+        if not chama:
+            raise click.ClickException("Run seed first")
+        db.session.add(Member(chama_id=chama.id, name=name, phone=normalize_phone(phone), is_treasurer=treasurer))
+        db.session.commit()
+        click.echo(f"Added {name} {normalize_phone(phone)} to {chama.name}")
