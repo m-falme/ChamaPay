@@ -61,7 +61,5 @@ def seed(reset=False, today=None):
     db.session.add(Vote(loan_id=loan.id, member_id=members[3].id, approve=False))
     old = Loan(member_id=members[5].id, amount=3000, reason="Medical", status="approved")
     db.session.add(old)
-    db.session.add(SmsLog(to=members[2].phone, message="(demo) Loan request alert", kind="loan_alert",
-                          status="Success", delivery_status="Success"))
     db.session.commit()
     return f"Seeded '{chama.name}' with {len(members)} members (periods {past[0]}..{now})."

@@ -35,12 +35,17 @@ def send_sms(recipients, message, kind="general"):
             sender = os.environ.get("AT_SENDER_ID", "").strip() or None
             resp = sdk.SMS.send(message, recipients, sender)
             for rec in resp.get("SMSMessageData", {}).get("Recipients", []):
-                results[rec.get("number")] = (rec.get("status", "unknown"), rec.get("messageId"))
+                st = rec.get("status", "unknown")
+                if st not in ("Success", "Sent", "Submitted", "Queued"):
+                    st = f"failed: {st}"
+                    log.warning("SMS to %s failed: %s", rec.get("number"), rec.get("status"))
+                results[rec.get("number")] = (st[:60], rec.get("messageId"))
+            msg = resp.get("SMSMessageData", {}).get("Message", "no recipients")
             for r in recipients:
-                results.setdefault(r, ("no response", None))
+                results.setdefault(r, (f"failed: {msg}"[:60], None))
         except Exception as exc:  # network / auth errors must not break USSD
             log.exception("SMS send failed")
-            results = {r: (f"error: {exc}"[:60], None) for r in recipients}
+            results = {r: (f"failed: {type(exc).__name__}: {exc}"[:60], None) for r in recipients}
     logs = []
     for r in recipients:
         status, mid = results[r]

@@ -63,3 +63,15 @@ def test_dashboard_rejects(authed):
 def test_dashboard_add_requires_login(client):
     assert client.post("/members", data={"name": "X", "phone": NEW}).status_code == 302
     assert Member.query.count() == 8
+
+
+def test_seed_idempotent_and_reset(app):
+    from chamapay.seed import seed
+    from chamapay.models import Chama, Contribution
+    n = Contribution.query.count()
+    assert "already present" in seed()
+    assert Chama.query.count() == 1 and Contribution.query.count() == n
+    Member.query.filter_by(phone="+254711000008").one().name = "Changed"
+    assert "Seeded" in seed(reset=True)
+    assert Member.query.count() == 8 and Contribution.query.count() == n
+    assert Member.query.filter_by(phone="+254711000008").one().name == "Ann Nduta"

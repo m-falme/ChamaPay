@@ -9,4 +9,4 @@ RUN mkdir -p /data && useradd -r -u 10001 app && chown -R app /data /app
 USER app
 EXPOSE 8080
 # Tables are created on startup; SEED_DEMO=1 loads the demo chama.
-CMD ["sh", "-c", "if [ \"$SEED_DEMO\" = \"1\" ]; then flask --app wsgi seed; fi; exec gunicorn -w 2 -b 0.0.0.0:${PORT:-8080} wsgi:app"]
+CMD ["sh", "-c", "if [ \"$SEED_RESET\" = \"1\" ]; then flask --app wsgi seed --reset; elif [ \"$SEED_DEMO\" = \"1\" ]; then flask --app wsgi seed; fi; exec gunicorn -w 2 -b 0.0.0.0:${PORT:-8080} wsgi:app"]

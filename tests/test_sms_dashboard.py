@@ -14,7 +14,7 @@ def test_sms_error_does_not_crash(app, fake_at):
         raise RuntimeError("network down")
     fake_at.SMS.send = boom
     services.send_sms("+254711000001", "x", kind="test")
-    assert SmsLog.query.filter_by(kind="test").first().status.startswith("error")
+    assert SmsLog.query.filter_by(kind="test").first().status.startswith("failed")
 
 
 def test_reminders_target_unpaid(app, fake_at):
@@ -26,7 +26,7 @@ def test_reminders_target_unpaid(app, fake_at):
 def test_confirm_sends_receipt(app, fake_at):
     c = Contribution.query.filter_by(status="pending").first()
     services.confirm_contribution(c)
-    assert c.status == "confirmed" and "receipt" in fake_at.SMS.sent[-1][0]
+    assert c.status == "confirmed" and "CONFIRMED" in fake_at.SMS.sent[-1][0]
 
 
 def test_delivery_callback(client, app, fake_at):

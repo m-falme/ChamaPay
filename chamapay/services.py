@@ -9,7 +9,15 @@ LOAN_REASONS = ["Emergency", "School fees", "Business", "Medical"]
 
 
 def fmt(n):
-    return f"KES {n:,}"
+    return f"KES {int(n or 0):,}"
+
+
+def month_label(period):
+    """'2026-10' -> 'Oct 2026'."""
+    try:
+        return datetime.strptime(period, "%Y-%m").strftime("%b %Y")
+    except (TypeError, ValueError):
+        return str(period)
 
 
 def group_savings(chama):
@@ -31,8 +39,9 @@ def record_contribution(member, amount, period=None):
     c = Contribution(member_id=member.id, amount=amount, period=period, status="pending")
     db.session.add(c)
     db.session.commit()
-    send_sms(member.phone, f"ChamaPay: {fmt(amount)} contribution for {period} recorded for "
-             f"{member.chama.name}. Awaiting treasurer confirmation. Ref C{c.id}.", kind="receipt")
+    send_sms(member.phone, f"ChamaPay {member.chama.name}: received {fmt(amount)} for {month_label(period)}, "
+             f"awaiting treasurer confirmation. Confirmed savings {fmt(member.balance())}. Ref C{c.id}",
+             kind="receipt")
     return c
 
 
@@ -43,8 +52,9 @@ def confirm_contribution(contribution):
     contribution.confirmed_at = utcnow()
     db.session.commit()
     m = contribution.member
-    send_sms(m.phone, f"ChamaPay receipt: {fmt(contribution.amount)} for {contribution.period} confirmed. "
-             f"Your total savings: {fmt(m.balance())}. Ref C{contribution.id}.", kind="receipt")
+    send_sms(m.phone, f"ChamaPay {m.chama.name}: {fmt(contribution.amount)} for "
+             f"{month_label(contribution.period)} CONFIRMED. Savings balance {fmt(m.balance())}. "
+             f"Ref C{contribution.id}", kind="receipt")
     return contribution
 
 
