@@ -36,9 +36,18 @@ def _pending_contribs(member):
                                      Contribution.status == "pending").order_by(Contribution.id).limit(5).all()
 
 
+def normalize_phone(raw):
+    p = raw.replace(" ", "").replace("-", "")
+    if p.startswith("254"):
+        p = "+" + p
+    elif p.startswith("0") and len(p) == 10:
+        p = "+254" + p[1:]
+    return p
+
+
 @bp.post("/ussd")
 def ussd():
-    phone = request.values.get("phoneNumber", "").strip()
+    phone = normalize_phone(request.values.get("phoneNumber", ""))
     text = request.values.get("text", "").strip()
     member = Member.query.filter_by(phone=phone).first()
     if not member:

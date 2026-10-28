@@ -81,3 +81,8 @@ def test_vote_rejects_loan(ussd):
     for p in ["+254711000005", "+254711000006", "+254711000007"]:
         ussd(p, "5*1*2")
     assert Loan.query.filter_by(reason="School fees").first().status == "rejected"
+
+
+def test_phone_normalisation(ussd):
+    assert ussd("0711000002").startswith("CON")
+    assert ussd(" 254711000002").startswith("CON")
