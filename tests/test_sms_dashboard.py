@@ -61,3 +61,26 @@ def test_voice_disabled_by_default(app, monkeypatch):
 def test_voice_xml(client):
     r = client.post("/voice")
     assert r.mimetype == "application/xml" and b"<Say" in r.data
+
+
+def test_dashboard_shows_failed_sms_and_kes(client, app, fake_at):
+    fake_at.SMS.send = lambda *a, **k: {"SMSMessageData": {"Message": "x", "Recipients": [
+        {"number": "+254711000001", "status": "InvalidPhoneNumber", "messageId": "None"}]}}
+    services.send_sms("+254711000001", "x", kind="test")
+    assert SmsLog.query.filter_by(kind="test").first().status == "failed: InvalidPhoneNumber"
+    client.post("/login", data={"password": "pw"})
+    html = client.get("/").get_data(as_text=True)
+    assert "1 SMS failed" in html and "failed: InvalidPhoneNumber" in html and "KES 4,000" in html
+
+
+def test_dashboard_empty_states(client, app):
+    from chamapay.models import Loan, Vote
+    Vote.query.delete(); Loan.query.delete(); db.session.commit()
+    client.post("/login", data={"password": "pw"})
+    html = client.get("/").get_data(as_text=True)
+    assert "No loan requests yet" in html and "No SMS sent yet" in html and "Demo mode" in html
+
+
+def test_flash_after_remind(client, app):
+    client.post("/login", data={"password": "pw"})
+    assert b"Reminder SMS" in client.post("/remind", follow_redirects=True).data

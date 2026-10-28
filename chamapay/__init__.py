@@ -22,6 +22,19 @@ def create_app(config=None):
     app.register_blueprint(dash_bp)
 
     from . import cli
+    from .services import fmt, month_label
+
+    app.jinja_env.filters["kes"] = fmt
+    app.jinja_env.filters["month"] = month_label
+
+    @app.template_filter("smsbadge")
+    def smsbadge(status):
+        st = (status or "").lower()
+        if st.startswith(("success", "sent", "submitted", "queued", "received", "delivered")):
+            return "ok"
+        if st.startswith("not sent"):
+            return "wait"
+        return "bad"
     cli.register(app)
 
     with app.app_context():

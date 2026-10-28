@@ -8,7 +8,7 @@ receipts and alerts, and the treasurer has a simple web dashboard. Built on Afri
 ## Features
 | Channel | What it does |
 |---|---|
-| **USSD** `POST /ussd` | 1 My balance · 2 Who paid this month · 3 Record contribution · 4 Request loan · 5 Vote on loans · 6 Confirm contributions (treasurer only) |
+| **USSD** `POST /ussd` | 1 My balance · 2 Who paid · 3 Pay contribution · 4 Request loan · 5 Vote on loans · 6 Confirm payments (treasurer only). `0` = back, `00` = main menu. Every screen ≤160 chars; errors end with a friendly message. |
 | **SMS** | Receipt when a contribution is recorded and when it is confirmed; reminders to unpaid members; group alert on a loan request; group alert when the vote decides the loan. Every SMS is logged. |
 | **SMS callbacks** | `POST /sms/delivery` (delivery reports update the log), `POST /sms/inbound` (logged) |
 | **Voice** (optional) | `VOICE_ENABLED=1`: calls late members; `POST /voice` returns the spoken message XML |
@@ -28,7 +28,8 @@ py -3.12 -m venv .venv
 .\.venv\Scripts\Activate.ps1          # if blocked: Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
 pip install -r requirements-dev.txt
 Copy-Item .env.example .env            # then edit .env: AT_API_KEY, DASHBOARD_PASSWORD, SECRET_KEY
-flask --app wsgi seed                  # loads "Umoja Women Group" (use --reset to reload)
+flask --app wsgi seed                  # loads "Umoja Women Group"; safe to re-run
+flask --app wsgi seed --reset          # wipe everything and reload fresh demo data
 flask --app wsgi run --port 8080       # http://localhost:8080  (dashboard login = DASHBOARD_PASSWORD)
 pytest                                 # run tests
 ```
@@ -70,7 +71,9 @@ flask --app wsgi add-member --name "Your Name" --phone 07XXXXXXXX --treasurer   
 
 > The simulator only shows SMS sent to the number currently connected in it. Switch numbers to see other members' messages.
 
-## Demo script (≈3 minutes)
+## Demo script
+The full live-demo walkthrough (setup checklist, exact simulator inputs, fallbacks) is in **[DEMO.md](DEMO.md)**. Short version:
+
 1. Dashboard at `<BASE>/` → log in. Show 8 members, 4 paid, 3 late, pending loan L1.
 2. Simulator as **Ann** `+254711000008`: dial the code → `2` (who paid) → shows Ann not paid.
 3. Dial again → `3` → `1000` → `1` → END "Recorded…"; SMS receipt arrives. Dashboard shows the pending contribution.
@@ -97,16 +100,11 @@ docker build -t chamapay .
 docker run --rm -p 8080:8080 --env-file .env -e SEED_DEMO=1 -v chamapay_data:/data chamapay
 ```
 The container listens on `$PORT` (default 8080), creates tables on start, seeds the demo chama when `SEED_DEMO=1`
-(idempotent), and stores SQLite at `/data/chamapay.db`.
+(idempotent; `SEED_RESET=1` wipes and reloads), and stores SQLite at `/data/chamapay.db`.
 
-## Africa's Talking Marketplace
-Listing copy, features and pricing are in [`marketplace/listing.md`](marketplace/listing.md); logo in `marketplace/logo.svg` / `logo.png`.
-To publish at https://marketplace.africastalking.dev:
-1. Sign in with your AT account and create a new app listing (name, short/long description, logo, pricing from `listing.md`).
-2. Follow the listing's container instructions to log in to AT's registry, then tag and push the image, e.g.
-   `docker tag chamapay <registry>/<namespace>/chamapay:1.0.0` and `docker push <registry>/<namespace>/chamapay:1.0.0`.
-3. Set environment variables in the listing (`AT_USERNAME`, `AT_API_KEY`, `DASHBOARD_PASSWORD`, `SECRET_KEY`, optional `SEED_DEMO=1`), port 8080, health check `/health`.
-4. Point the USSD/SMS callbacks of the AT app to the deployed URL (`/ussd`, `/sms/delivery`).
+## Marketing assets
+`marketplace/` holds a short and long description, the feature list, an example pricing plan and the logo
+(`logo.svg`, `logo.png`) for slides or a future listing. Publishing to the AT Marketplace is out of scope for this version.
 
 ## Configuration
 All configuration is via environment variables; see [`.env.example`](.env.example). Never commit `.env`.

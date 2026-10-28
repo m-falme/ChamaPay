@@ -72,6 +72,8 @@ def test_seed_idempotent_and_reset(app):
     assert "already present" in seed()
     assert Chama.query.count() == 1 and Contribution.query.count() == n
     Member.query.filter_by(phone="+254711000008").one().name = "Changed"
+    from chamapay.models import db
+    db.session.commit()
     assert "Seeded" in seed(reset=True)
     assert Member.query.count() == 8 and Contribution.query.count() == n
     assert Member.query.filter_by(phone="+254711000008").one().name == "Ann Nduta"

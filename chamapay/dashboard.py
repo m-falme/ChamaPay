@@ -1,3 +1,4 @@
+import os
 import hmac
 from functools import wraps
 
@@ -51,7 +52,8 @@ def index():
         .order_by(Contribution.period.desc(), Contribution.id.desc()).limit(40).all(),
         loans=Loan.query.filter(Loan.member_id.in_(ids)).order_by(Loan.id.desc()).all(),
         sms=SmsLog.query.order_by(SmsLog.id.desc()).limit(50).all(),
-        voice=voice_enabled())
+        voice=voice_enabled(), at_live=bool(os.environ.get("AT_API_KEY", "").strip()),
+        sms_failed=SmsLog.query.filter(SmsLog.status.like("failed%")).count())
 
 
 @bp.post("/remind")

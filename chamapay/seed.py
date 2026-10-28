@@ -28,6 +28,8 @@ def _periods(n, today):
 def seed(reset=False, today=None):
     today = today or date.today()
     if reset:
+        db.session.rollback()
+        db.session.expunge_all()
         db.drop_all()
         db.create_all()
     if Chama.query.filter_by(name="Umoja Women Group").first():
@@ -61,5 +63,8 @@ def seed(reset=False, today=None):
     db.session.add(Vote(loan_id=loan.id, member_id=members[3].id, approve=False))
     old = Loan(member_id=members[5].id, amount=3000, reason="Medical", status="approved")
     db.session.add(old)
+    db.session.flush()
+    for m in members[:4]:  # the earlier loan was approved by majority
+        db.session.add(Vote(loan_id=old.id, member_id=m.id, approve=True))
     db.session.commit()
     return f"Seeded '{chama.name}' with {len(members)} members (periods {past[0]}..{now})."
