@@ -12,7 +12,7 @@ receipts and alerts, and the treasurer has a simple web dashboard. Built on Afri
 | **SMS** | Receipt when a contribution is recorded and when it is confirmed; reminders to unpaid members; group alert on a loan request; group alert when the vote decides the loan. Every SMS is logged. |
 | **SMS callbacks** | `POST /sms/delivery` (delivery reports update the log), `POST /sms/inbound` (logged) |
 | **Voice** (optional) | `VOICE_ENABLED=1`: calls late members; `POST /voice` returns the spoken message XML |
-| **Dashboard** `/` | Members, savings, late this month, contributions (confirm button), loans and votes, SMS log, "Send SMS reminders" button. Password login. |
+| **Dashboard** `/` | Add member form, members, savings, late this month, contributions (confirm button), loans and votes, SMS log, "Send SMS reminders" button. Password login. |
 | **Health** | `GET /health` → `{"status":"ok"}` |
 
 Loans are decided by simple majority of the other members (borrower cannot vote). With no `AT_API_KEY`, SMS are
@@ -38,7 +38,7 @@ Useful commands:
 ```powershell
 flask --app wsgi send-reminders                      # SMS everyone not yet paid this month (schedule with Task Scheduler/cron)
 flask --app wsgi voice-reminders                     # needs VOICE_ENABLED=1 and AT_VOICE_NUMBER
-flask --app wsgi add-member "Your Name" 07XXXXXXXX --treasurer   # add your own simulator number
+flask --app wsgi add-member --name "Your Name" --phone 07XXXXXXXX --treasurer   # or positional: add-member "Your Name" 07XXXXXXXX
 ```
 
 ### Demo members (seeded)

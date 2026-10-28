@@ -28,15 +28,21 @@ def register(app):
                 click.echo(f"{phone}: {st}")
 
     @app.cli.command("add-member")
-    @click.argument("name")
-    @click.argument("phone")
-    @click.option("--treasurer", is_flag=True)
-    def add_member_cmd(name, phone, treasurer):
-        """Add a member (e.g. your own sandbox simulator number) to the first chama."""
-        from .ussd import normalize_phone
+    @click.argument("name_arg", metavar="[NAME]", required=False)
+    @click.argument("phone_arg", metavar="[PHONE]", required=False)
+    @click.option("--name", "name_opt", help="Member name")
+    @click.option("--phone", "phone_opt", help="Phone, e.g. 07XXXXXXXX or +2547XXXXXXXX")
+    @click.option("--treasurer", is_flag=True, help="Make this member a treasurer")
+    def add_member_cmd(name_arg, phone_arg, name_opt, phone_opt, treasurer):
+        """Add a member to the first chama (positional NAME PHONE or --name/--phone)."""
+        from .services import add_member
+        name, phone = name_opt or name_arg, phone_opt or phone_arg
+        if not name or not phone:
+            raise click.UsageError("Provide NAME and PHONE (positionally or via --name/--phone).")
         chama = Chama.query.first()
         if not chama:
             raise click.ClickException("Run seed first")
-        db.session.add(Member(chama_id=chama.id, name=name, phone=normalize_phone(phone), is_treasurer=treasurer))
-        db.session.commit()
-        click.echo(f"Added {name} {normalize_phone(phone)} to {chama.name}")
+        m, err = add_member(chama, name, phone, treasurer)
+        if err:
+            raise click.ClickException(err)
+        click.echo(f"Added {m.name} {m.phone}{' (treasurer)' if m.is_treasurer else ''} to {chama.name}")

@@ -1,4 +1,5 @@
 """Business logic shared by USSD, dashboard and CLI."""
+import re
 from datetime import date, datetime
 
 from .models import utcnow, db, Chama, Member, Contribution, Loan, Vote, current_period
@@ -94,3 +95,23 @@ def send_reminders(chama, period=None):
 
 def voice_reminders(chama, period=None):
     return {m.phone: voice_call(m.phone) for m in late_members(chama, period)}
+
+
+KE_PHONE = re.compile(r"^\+254[17]\d{8}$")
+
+
+def add_member(chama, name, phone, treasurer=False):
+    """Validate and add a member. Returns (member, error)."""
+    from .ussd import normalize_phone
+    name = (name or "").strip()
+    if not name or len(name) > 120:
+        return None, "Name is required (max 120 characters)."
+    phone = normalize_phone(phone or "")
+    if not KE_PHONE.match(phone):
+        return None, "Phone must be a Kenyan mobile number like 07XXXXXXXX or +2547XXXXXXXX."
+    if Member.query.filter_by(phone=phone).first():
+        return None, f"A member with phone {phone} already exists."
+    m = Member(chama_id=chama.id, name=name, phone=phone, is_treasurer=bool(treasurer))
+    db.session.add(m)
+    db.session.commit()
+    return m, None

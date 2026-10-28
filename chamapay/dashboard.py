@@ -78,3 +78,16 @@ def confirm(cid):
     s.confirm_contribution(db.get_or_404(Contribution, cid))
     flash("Contribution confirmed and receipt sent.", "ok")
     return redirect(url_for("dashboard.index"))
+
+
+@bp.post("/members")
+@login_required
+def add_member():
+    chama = Chama.query.first()
+    if not chama:
+        flash("Seed or create a chama first.", "error")
+        return redirect(url_for("dashboard.index"))
+    m, err = s.add_member(chama, request.form.get("name"), request.form.get("phone"),
+                          request.form.get("treasurer") == "on")
+    flash(err or f"Added {m.name} ({m.phone}).", "error" if err else "ok")
+    return redirect(url_for("dashboard.index"))

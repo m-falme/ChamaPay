@@ -19,6 +19,7 @@ button.ghost{background:transparent;border:1px solid #fff}button.sm{padding:4px 
 .actions{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}.flash{padding:10px 12px;border-radius:8px;margin-bottom:12px}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}@media(max-width:760px){.grid2{grid-template-columns:1fr}}
 input{padding:10px;border:1px solid var(--b);border-radius:8px;width:100%;font-size:16px}
+.addm{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.addm input[name]{flex:1 1 200px}.addm label{display:flex;gap:6px;align-items:center}
 </style></head><body>
 <header><b>ChamaPay</b>{% if session.auth %}<form method="post" action="{{ url_for('dashboard.logout') }}"><button class="ghost sm">Log out</button></form>{% endif %}</header>
 <main>

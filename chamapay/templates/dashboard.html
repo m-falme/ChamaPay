@@ -19,6 +19,13 @@
 </table></section>
 <section><h2>Late this month</h2>{% if late %}<table><tr><th>Name</th><th>Phone</th></tr>{% for m in late %}<tr><td>{{ m.name }}</td><td>{{ m.phone }}</td></tr>{% endfor %}</table>{% else %}<p>Everyone has paid.</p>{% endif %}</section>
 </div>
+<section><h2>Add member</h2>
+<form method="post" action="{{ url_for('dashboard.add_member') }}" class="addm">
+ <input name="name" placeholder="Full name" required maxlength="120">
+ <input name="phone" placeholder="07XXXXXXXX or +2547XXXXXXXX" required inputmode="tel">
+ <label><input type="checkbox" name="treasurer" style="width:auto"> Treasurer</label>
+ <button>Add member</button>
+</form></section>
 <section><h2>Loans &amp; votes</h2><table><tr><th>Ref</th><th>Member</th><th>Amount</th><th>Reason</th><th>Status</th><th>Votes</th></tr>
 {% for l in loans %}{% set t = l.tally() %}<tr><td>L{{ l.id }}</td><td>{{ l.member.name }}</td><td>{{ fmt(l.amount) }}</td><td>{{ l.reason }}</td>
 <td><span class="pill {{ 'ok' if l.status=='approved' else 'bad' if l.status=='rejected' else 'wait' }}">{{ l.status }}</span></td>
