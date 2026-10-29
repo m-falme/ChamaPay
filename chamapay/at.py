@@ -19,6 +19,20 @@ def _sdk():
     return _client["sdk"]
 
 
+def _send_with_retry(sdk, message, recipients, sender, attempts=4):
+    """Retry transient network/TLS errors (AT sandbox load balancer is occasionally flaky)."""
+    import time
+    last = None
+    for i in range(attempts):
+        try:
+            return sdk.SMS.send(message, recipients, sender)
+        except Exception as exc:  # noqa: BLE001
+            last = exc
+            log.warning("SMS attempt %d failed: %s", i + 1, exc)
+            time.sleep(0.5 * (i + 1))
+    raise last
+
+
 def send_sms(recipients, message, kind="general"):
     """Send one message to a list of phone numbers; log every recipient. Returns list of SmsLog."""
     if isinstance(recipients, str):
@@ -33,7 +47,7 @@ def send_sms(recipients, message, kind="general"):
     else:
         try:
             sender = os.environ.get("AT_SENDER_ID", "").strip() or None
-            resp = sdk.SMS.send(message, recipients, sender)
+            resp = _send_with_retry(sdk, message, recipients, sender)
             for rec in resp.get("SMSMessageData", {}).get("Recipients", []):
                 st = rec.get("status", "unknown")
                 if st not in ("Success", "Sent", "Submitted", "Queued"):
