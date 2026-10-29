@@ -2,7 +2,6 @@
 <h1>{{ chama.name }}</h1>
 <p class="sub">{{ chama.contribution_amount|kes }} due on day {{ chama.contribution_day }} each month · Current month <b>{{ period|month }}</b></p>
 {% if not at_live %}<div class="banner">Demo mode: no <code>AT_API_KEY</code> set, so SMS are logged as "not sent" instead of being delivered.</div>{% endif %}
-{% if sms_failed %}<div class="banner" style="background:var(--rl);color:var(--r);border-color:#f3b4ad">{{ sms_failed }} SMS failed to send. See the SMS log below.</div>{% endif %}
 {% set paid_count = chama.members|length - late|length %}
 <div class="cards">
  <div class="card"><small>Members</small><div>{{ chama.members|length }}</div></div>

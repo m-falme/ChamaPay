@@ -70,7 +70,7 @@ def test_dashboard_shows_failed_sms_and_kes(client, app, fake_at):
     assert SmsLog.query.filter_by(kind="test").first().status == "failed: InvalidPhoneNumber"
     client.post("/login", data={"password": "pw"})
     html = client.get("/").get_data(as_text=True)
-    assert "1 SMS failed" in html and "failed: InvalidPhoneNumber" in html and "KES 4,000" in html
+    assert "failed: InvalidPhoneNumber" in html and "KES 4,000" in html
 
 
 def test_dashboard_empty_states(client, app):
