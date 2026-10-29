@@ -19,8 +19,33 @@ def _sdk():
     return _client["sdk"]
 
 
-def _send_with_retry(sdk, message, recipients, sender, attempts=4):
-    """Retry transient network/TLS errors (AT sandbox load balancer is occasionally flaky)."""
+def _curl_send(message, recipients, sender):
+    """Fallback: send via the system curl (uses the OS TLS stack, e.g. Windows SChannel)."""
+    import json, shutil, subprocess
+    curl = shutil.which("curl") or shutil.which("curl.exe")
+    if not curl:
+        raise RuntimeError("curl not available")
+    user = os.environ.get("AT_USERNAME", "sandbox").strip() or "sandbox"
+    host = "api.sandbox.africastalking.com" if user == "sandbox" else "api.africastalking.com"
+    args = [curl, "-sS", "--max-time", "20", "-X", "POST", f"https://{host}/version1/messaging",
+            "-H", "Accept: application/json",
+            "-H", f"apiKey: {os.environ.get('AT_API_KEY', '').strip()}",
+            "--data-urlencode", f"username={user}",
+            "--data-urlencode", f"to={','.join(recipients)}",
+            "--data-urlencode", f"message={message}"]
+    if sender:
+        args += ["--data-urlencode", f"from={sender}"]
+    out = subprocess.run(args, capture_output=True, text=True, timeout=30)
+    if out.returncode != 0:
+        raise RuntimeError(f"curl failed: {out.stderr.strip()[:200]}")
+    try:
+        return json.loads(out.stdout)
+    except ValueError:
+        raise RuntimeError(f"AT replied: {out.stdout.strip()[:120]}")
+
+
+def _send_with_retry(sdk, message, recipients, sender, attempts=2):
+    """Try the SDK; on network/TLS errors retry, then fall back to system curl."""
     import time
     last = None
     for i in range(attempts):
@@ -28,9 +53,14 @@ def _send_with_retry(sdk, message, recipients, sender, attempts=4):
             return sdk.SMS.send(message, recipients, sender)
         except Exception as exc:  # noqa: BLE001
             last = exc
-            log.warning("SMS attempt %d failed: %s", i + 1, exc)
-            time.sleep(0.5 * (i + 1))
-    raise last
+            log.warning("SMS attempt %d failed: %s", i + 1, str(exc)[:160])
+            time.sleep(0.3)
+    try:
+        log.warning("Falling back to system curl for SMS")
+        return _curl_send(message, recipients, sender)
+    except Exception as exc:  # noqa: BLE001
+        log.warning("curl fallback failed: %s", exc)
+        raise last
 
 
 def send_sms(recipients, message, kind="general"):
